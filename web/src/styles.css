@@ -1,0 +1,38 @@
+/* Estilos base del visor: layout 2-col, panel lateral fijo, visor flexible. */
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; height: 100%; font-family: system-ui, sans-serif; }
+body { display: flex; flex-direction: column; height: 100vh; }
+
+.topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0.5rem 1rem; border-bottom: 1px solid #ddd; background: #fafafa;
+}
+.topbar h1 { font-size: 1.1rem; margin: 0; }
+
+.layout { display: flex; flex: 1; min-height: 0; }
+
+.panel {
+  width: 280px; border-right: 1px solid #ddd; padding: 0.75rem; overflow-y: auto;
+  background: #fcfcfc;
+}
+.panel h2 { font-size: 0.9rem; margin: 0 0 0.5rem; color: #555; text-transform: uppercase; letter-spacing: 0.5px; }
+
+.parts-list { list-style: none; margin: 0; padding: 0; }
+.parts-list li {
+  display: flex; align-items: center; gap: 0.5rem; padding: 0.35rem 0.25rem;
+  border-radius: 4px; cursor: pointer; font-size: 0.85rem;
+}
+.parts-list li:hover { background: #eef3ff; }
+.parts-list .swatch { width: 14px; height: 14px; border-radius: 3px; flex: 0 0 14px; border: 1px solid rgba(0,0,0,0.15); }
+.parts-list .pn { flex: 1; font-family: ui-monospace, monospace; }
+.parts-list .count { color: #888; font-variant-numeric: tabular-nums; }
+
+.viewer { flex: 1; min-width: 0; overflow: hidden; background: #fff; display: flex; }
+.viewer svg { width: 100%; height: 100%; }
+
+/* Resaltado al hacer hover sobre un item del panel: el resto se atenua. */
+.viewer svg.has-highlight g[data-part]:not(.highlight) { opacity: 0.15; }
+.viewer svg g[data-part].highlight { stroke-width: 2; }
+
+/* Datums siempre en gris tenue, no participan del highlight. */
+.viewer svg .datums { stroke: #bbb; }

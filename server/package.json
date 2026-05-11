@@ -1,0 +1,16 @@
+{
+  "name": "sorteador-corte-server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "node --watch src/index.js",
+    "start": "node src/index.js"
+  },
+  "dependencies": {
+    "dxf-parser": "^1.1.2",
+    "express": "^4.19.2",
+    "multer": "^2.0.1"
+  }
+}
