@@ -1,13 +1,13 @@
 // Consulta la ruta siguiente para una lista de numeros de parte.
 // Expande parametros de forma segura (@pn0, @pn1, ...) sin concatenar strings.
-import { getPool, sql } from './sqlClient.js';
+import { getPool, sql } from "./sqlClient.js";
 
 /**
  * Dado un array de part-numbers, consulta SQL Server y devuelve un mapa
  * { [partNumber]: { nextRoute: string|null, raw: object } }.
  * Los part-numbers que no tengan ruta siguiente tendran nextRoute: null.
  */
-export async function getNextRoutes(partNumbers) {
+export async function getNextProcess(partNumbers) {
   const pool = await getPool();
   const request = pool.request();
 
@@ -19,7 +19,7 @@ export async function getNextRoutes(partNumbers) {
     clauses.push(`@${paramName}`);
   }
 
-  const inClause = clauses.join(', ');
+  const inClause = clauses.join(", ");
 
   // Query principal: obtiene la ruta siguiente (NoAsc = 2) para cada material.
   const query = `
@@ -38,16 +38,16 @@ export async function getNextRoutes(partNumbers) {
 
   const result = await request.query(query);
 
-  // Inicializamos el mapa con nextRoute: null para todos los solicitados.
+  // Inicializamos el mapa con nextProcess: null para todos los solicitados.
   const map = {};
   for (const pn of partNumbers) {
-    map[pn] = { nextRoute: null };
+    map[pn] = { nextProcess: null };
   }
 
   // Sobrescribimos con los resultados reales de la BD.
   for (const row of result.recordset) {
     map[row.PartNumber] = {
-      nextRoute: row.NextRoute,
+      nextProcess: row.NextProcess,
       raw: row,
     };
   }
