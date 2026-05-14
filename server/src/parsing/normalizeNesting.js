@@ -1,5 +1,6 @@
 // Combina geometria, instancias y colores en el JSON estable que consume el frontend.
 import { assignColors } from '../colors/assignColors.js';
+import { buildLoops } from './buildLoops.js';
 
 // Calcula bounding box recorriendo INSERTs cuando $EXTMIN/$EXTMAX no estan disponibles.
 function computeBoundsFromInstances(instances) {
@@ -32,12 +33,13 @@ export function normalizeNesting(parsed, extracted) {
   const partNumbers = Array.from(partDefinitions.keys());
   const colors = assignColors(partNumbers);
 
-  // Estructura "parts": geometria + color + conteo de instancias por pieza.
+  // Estructura "parts": geometria + color + conteo de instancias + loops por pieza.
   const parts = partNumbers.map((pn) => ({
     partNumber: pn,
     color: colors.get(pn),
     count: countByPart.get(pn) || 0,
     entities: partDefinitions.get(pn).entities,
+    loops: buildLoops(partDefinitions.get(pn).entities),
   }));
 
   // Datums: aplanamos definicion + instancias para que el frontend solo dibuje en gris.
