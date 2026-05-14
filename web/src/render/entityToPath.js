@@ -1,7 +1,7 @@
 // Convierte una entidad DXF normalizada en un elemento SVG.
 // Trabaja en coordenadas DXF (Y arriba); el flip se aplica en el grupo raiz del renderer.
 
-const SVG_NS = 'http://www.w3.org/2000/svg';
+const SVG_NS = "http://www.w3.org/2000/svg";
 const TAU = Math.PI * 2;
 
 // Construye el atributo "d" de un arco usando el comando A de SVG.
@@ -31,14 +31,14 @@ function arcSpan(startRad, endRad) {
 // Cada entidad del loop tiene { entity, reversed }.
 // El path se construye en coordenadas DXF; el flip Y se aplica en el grupo raiz.
 export function loopToPathD(loop) {
-  if (loop.entities.length === 0) return '';
+  if (loop.entities.length === 0) return "";
 
   const parts = [];
 
   for (let i = 0; i < loop.entities.length; i++) {
     const { entity, reversed } = loop.entities[i];
 
-    if (entity.type === 'LINE') {
+    if (entity.type === "LINE") {
       // Punto inicial: solo en la primera entidad.
       if (i === 0) {
         const sx = reversed ? entity.x2 : entity.x1;
@@ -49,7 +49,7 @@ export function loopToPathD(loop) {
       const ex = reversed ? entity.x1 : entity.x2;
       const ey = reversed ? entity.y1 : entity.y2;
       parts.push(`L ${ex} ${ey}`);
-    } else if (entity.type === 'ARC') {
+    } else if (entity.type === "ARC") {
       // Angulos segun direccion de recorrido.
       const startRad = reversed ? entity.endAngle : entity.startAngle;
       const endRad = reversed ? entity.startAngle : entity.endAngle;
@@ -63,15 +63,21 @@ export function loopToPathD(loop) {
       const ex = entity.cx + entity.r * Math.cos(endRad);
       const ey = entity.cy + entity.r * Math.sin(endRad);
 
-      // Barrido: reversed invierte el sentido.
-      // En DXF antihorario → SVG sweep=1 (con flip Y sale antihorario visual).
-      // Reversed (horario en DXF) → SVG sweep=0.
-      const span = arcSpan(startRad, endRad);
+      // largeArc es geometrico (corto/largo del arco) → se calcula sobre los angulos
+      // DXF originales, no sobre los invertidos: arcSpan(end,start) daria TAU - span
+      // y seleccionaria el arco complementario (sintoma: esquinas concavas que se ven
+      // bombeadas hacia afuera).
+      // sweep es direccional: reversed=true invierte el recorrido. Combinado con el
+      // flip(1,-1) del grupo raiz, el sentido visual queda correcto.
+
+      const span = arcSpan(entity.startAngle, entity.endAngle);
       const largeArc = span > Math.PI ? 1 : 0;
       const sweep = reversed ? 0 : 1;
 
-      parts.push(`A ${entity.r} ${entity.r} 0 ${largeArc} ${sweep} ${ex} ${ey}`);
-    } else if (entity.type === 'CIRCLE') {
+      parts.push(
+        `A ${entity.r} ${entity.r} 0 ${largeArc} ${sweep} ${ex} ${ey}`,
+      );
+    } else if (entity.type === "CIRCLE") {
       // Circulo completo: dos semiarcos opuestos.
       const r = entity.r;
       const cx = entity.cx;
@@ -84,33 +90,42 @@ export function loopToPathD(loop) {
   }
 
   if (loop.closed) {
-    parts.push('Z');
+    parts.push("Z");
   }
 
-  return parts.join(' ');
+  return parts.join(" ");
 }
 
 export function entityToSvg(entity) {
-  if (entity.type === 'LINE') {
-    const el = document.createElementNS(SVG_NS, 'line');
-    el.setAttribute('x1', entity.x1);
-    el.setAttribute('y1', entity.y1);
-    el.setAttribute('x2', entity.x2);
-    el.setAttribute('y2', entity.y2);
+  if (entity.type === "LINE") {
+    const el = document.createElementNS(SVG_NS, "line");
+    el.setAttribute("x1", entity.x1);
+    el.setAttribute("y1", entity.y1);
+    el.setAttribute("x2", entity.x2);
+    el.setAttribute("y2", entity.y2);
     return el;
   }
-  if (entity.type === 'CIRCLE') {
-    const el = document.createElementNS(SVG_NS, 'circle');
-    el.setAttribute('cx', entity.cx);
-    el.setAttribute('cy', entity.cy);
-    el.setAttribute('r', entity.r);
-    el.setAttribute('fill', 'none');
+  if (entity.type === "CIRCLE") {
+    const el = document.createElementNS(SVG_NS, "circle");
+    el.setAttribute("cx", entity.cx);
+    el.setAttribute("cy", entity.cy);
+    el.setAttribute("r", entity.r);
+    el.setAttribute("fill", "none");
     return el;
   }
-  if (entity.type === 'ARC') {
-    const el = document.createElementNS(SVG_NS, 'path');
-    el.setAttribute('d', arcToPathD(entity.cx, entity.cy, entity.r, entity.startAngle, entity.endAngle));
-    el.setAttribute('fill', 'none');
+  if (entity.type === "ARC") {
+    const el = document.createElementNS(SVG_NS, "path");
+    el.setAttribute(
+      "d",
+      arcToPathD(
+        entity.cx,
+        entity.cy,
+        entity.r,
+        entity.startAngle,
+        entity.endAngle,
+      ),
+    );
+    el.setAttribute("fill", "none");
     return el;
   }
   return null;
