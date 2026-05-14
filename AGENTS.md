@@ -9,8 +9,7 @@ Aplicación web que lee archivos DXF de nesteos (layouts de corte láser), los p
 - Backend: Node.js con Express (`server/`)
 - Frontend: Vite + JS vanilla, render SVG (`web/`)
 - Parser DXF: `dxf-parser` (en `server/src/parsing/parseDxf.js`)
-- Lookup de destinos: stub mock en `server/src/db/lookupDestinations.js` (futuro: SQL Server)
-- Ruta siguiente: `server/src/db/getNextRoutes.js` consulta SQL Server via `mssql` (pool en `server/src/db/sqlClient.js`)
+- Ruta siguiente: `server/src/db/getNextProcess.js` consulta SQL Server via `mssql` (pool en `server/src/db/sqlClient.js`)
 
 ## Variables de entorno (server/.env)
 
@@ -28,13 +27,13 @@ Ver `server/.env.example` como plantilla.
 
 ## Estructura
 
-- `server/src/index.js` — bootstrap Express, monta `/api/nestings` y `/api/destinations`.
+- `server/src/index.js` — bootstrap Express, monta `/api/nestings` y `/api/nextProcess`.
 - `server/src/parsing/` — parseo DXF, extracción de bloques y normalización del nesteo.
 - `server/src/colors/assignColors.js` — asignación estable de color por número de parte.
 - `server/src/routes/nestings.js` — `POST /api/nestings` recibe DXF (multipart) y devuelve JSON normalizado.
-- `server/src/routes/destinations.js` — `POST /api/destinations/lookup` mapea partNumbers a destinos (mock). `POST /api/destinations/next-route` consulta ruta siguiente en SQL Server.
+- `POST /api/destinations/nextProcess` consulta ruta siguiente en SQL Server.
 - `server/src/db/sqlClient.js` — pool singleton de conexion a SQL Server.
-- `server/src/db/getNextRoutes.js` — ejecuta el query de ruta siguiente y mapea resultados.
+- `server/src/db/getNextProcess.js` — ejecuta el query de ruta siguiente y mapea resultados.
 - `web/src/render/svgRenderer.js` — render SVG: aplica transform de INSERTs, flip Y, stroke por color.
 - `web/src/render/entityToPath.js` — conversión de entidades DXF (LINE, CIRCLE, ARC) a SVG.
 - `web/src/ui/` — uploader y panel lateral de piezas.
