@@ -43,6 +43,3 @@ body { display: flex; flex-direction: column; height: 100vh; }
 /* Resaltado al hacer hover sobre un item del panel: el resto se atenua. */
 .viewer svg.has-highlight g[data-part]:not(.highlight) { opacity: 0.15; }
 .viewer svg g[data-part].highlight { stroke-width: 2; }
-
-/* Datums siempre en gris tenue, no participan del highlight. */
-.viewer svg .datums { stroke: #bbb; }

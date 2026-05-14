@@ -113,22 +113,5 @@ export function renderNesting(nesting) {
     root.appendChild(buildInstanceGroup(part, inst));
   }
 
-  // Datums al final, en gris (CSS via clase .datums).
-  if (nesting.datums?.length) {
-    const datumsGroup = document.createElementNS(SVG_NS, 'g');
-    datumsGroup.setAttribute('class', 'datums');
-    datumsGroup.setAttribute('fill', 'none');
-    for (const d of nesting.datums) {
-      const g = document.createElementNS(SVG_NS, 'g');
-      g.setAttribute('transform', `translate(${d.x} ${d.y}) rotate(${d.rot}) scale(${d.sx} ${d.sy})`);
-      for (const e of d.entities) {
-        const el = entityToSvg(e);
-        if (el) g.appendChild(el);
-      }
-      datumsGroup.appendChild(g);
-    }
-    root.appendChild(datumsGroup);
-  }
-
   return svg;
 }
