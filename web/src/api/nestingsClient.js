@@ -21,3 +21,17 @@ export async function lookupDestinations(partNumbers) {
   if (!res.ok) throw new Error(`Error ${res.status} en lookup de destinos`);
   return res.json();
 }
+
+// Consulta la ruta siguiente de los part-numbers contra el endpoint real de SQL Server.
+export async function fetchNextRoutes(partNumbers) {
+  const res = await fetch('/api/destinations/next-route', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ partNumbers }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || `Error ${res.status} al consultar ruta siguiente`);
+  }
+  return res.json();
+}

@@ -1,6 +1,7 @@
 // Entry-point: conecta uploader, llamada al backend, render SVG y panel de partes.
 import { uploadNesting } from './api/nestingsClient.js';
-import { renderNesting } from './render/svgRenderer.js';
+import { fetchNextRoutes } from './api/nestingsClient.js';
+import { renderNesting, fitViewBoxToContent } from './render/svgRenderer.js';
 import { mountUploader } from './ui/uploader.js';
 import { renderPartsPanel } from './ui/partsPanel.js';
 
@@ -18,7 +19,16 @@ mountUploader(slotEl, {
       const svg = renderNesting(nesting);
       viewerEl.innerHTML = '';
       viewerEl.appendChild(svg);
+      // Reencuadre: el viewBox del backend usa la hoja completa; ya en el DOM
+      // medimos el contenido real y ajustamos para llenar el espacio disponible.
+      fitViewBoxToContent(svg);
       renderPartsPanel(listEl, nesting.parts, viewerEl);
+
+      // Consulta de ruta siguiente: extraemos part-numbers y disparamos el endpoint.
+      const partNumbers = nesting.parts.map((p) => p.partNumber);
+      fetchNextRoutes(partNumbers)
+        .then((routes) => console.log('[next-route]', routes))
+        .catch((err) => console.error('[next-route] error:', err.message));
     } catch (err) {
       viewerEl.innerHTML = `<p style="margin:auto;color:#c00">${err.message}</p>`;
     }
