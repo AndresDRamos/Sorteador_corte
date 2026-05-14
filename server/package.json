@@ -9,8 +9,10 @@
     "start": "node src/index.js"
   },
   "dependencies": {
+    "dotenv": "^17.4.2",
     "dxf-parser": "^1.1.2",
     "express": "^4.19.2",
+    "mssql": "^12.5.3",
     "multer": "^2.0.1"
   }
 }
