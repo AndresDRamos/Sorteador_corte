@@ -5,19 +5,20 @@
 
 ## Propósito
 
-Asigna un color hex estable a cada part-number usando un hash determinista. Garantiza que el mismo part-number reciba el mismo color entre cargas distintas (importante para que el operador reconozca piezas visualmente entre nesteos).
+Asigna un color hex estable a cada **grupo de proceso siguiente** usando un hash determinista. Las piezas que comparten destino comparten color, lo que permite al operador identificar visualmente hacia dónde va cada pieza en el nesteo. Piezas sin proceso siguiente en la BD caen al grupo `Almacén Kiteo`.
 
 ## API pública
 
-- `assignColors(partNumbers)` — [server/src/colors/assignColors.js:23](../server/src/colors/assignColors.js#L23). Devuelve `Map<partNumber, color>`.
+- `assignColors(groupKeys)` — [server/src/colors/assignColors.js:23](../server/src/colors/assignColors.js#L23). Recibe un iterable de claves de grupo (procesos siguientes) y devuelve `Map<groupKey, color>`.
 
 ## Conceptos clave
 
 - **Paleta fija de 20 colores** con buen contraste sobre fondo claro (basada en Kelly / Sasha Trubetskoy) — [assignColors.js:5-10](../server/src/colors/assignColors.js#L5-L10).
-- **Hash djb2** sobre el string del part-number, módulo `PALETTE.length` ([assignColors.js:13](../server/src/colors/assignColors.js#L13)). Suficiente para distribuir N partes uniformemente.
-- **Colisiones:** con más de 20 part-numbers distintos habrá colores repetidos por diseño. La estabilidad pesa más que la unicidad.
-- **No depende del orden de entrada**, solo del valor del string.
+- **Hash djb2** sobre el string del grupo, módulo `PALETTE.length` ([assignColors.js:13](../server/src/colors/assignColors.js#L13)).
+- **Colisiones:** con más de 20 grupos distintos habrá colores repetidos por diseño. La estabilidad entre cargas pesa más que la unicidad.
+- **Grupo por defecto:** `Almacén Kiteo` para part-numbers cuyo `nextProcess` venga `null` desde [getNextProcess](../server/src/db/getNextProcess.js).
+- **No depende del orden de entrada**, solo del valor del string del grupo.
 
 ## Consumidor
 
-- [server/src/parsing/normalizeNesting.js:43](../server/src/parsing/normalizeNesting.js#L43) lo invoca al armar el JSON final; el color viaja en cada `part.color`.
+- [server/src/parsing/normalizeNesting.js](../server/src/parsing/normalizeNesting.js) consulta `getNextProcess`, arma `groupByPart` (part → proceso siguiente, con fallback al grupo por defecto) y pasa las claves de grupo a `assignColors`. Cada `part` del JSON resultante incluye `nextProcess` y `color`.
