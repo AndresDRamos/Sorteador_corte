@@ -1,6 +1,7 @@
 // Combina geometria, instancias y colores en el JSON estable que consume el frontend.
 import { assignColors } from "../colors/assignColors.js";
 import { buildLoops } from "./buildLoops.js";
+import { classifyLoops } from "./classifyLoops.js";
 
 // Calcula bounding box recorriendo INSERTs cuando $EXTMIN/$EXTMAX no estan disponibles.
 function computeBoundsFromInstances(instances) {
@@ -48,7 +49,9 @@ export function normalizeNesting(parsed, extracted) {
     color: colors.get(pn),
     count: countByPart.get(pn) || 0,
     entities: partDefinitions.get(pn).entities,
-    loops: buildLoops(partDefinitions.get(pn).entities),
+    // Loops cerrados clasificados por contencion (role: outer|hole, depth: N).
+    // Permite que el frontend combine subpaths con fill-rule evenodd y renderice huecos reales.
+    loops: classifyLoops(buildLoops(partDefinitions.get(pn).entities)),
   }));
 
   const bounds =

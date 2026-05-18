@@ -1,40 +1,67 @@
 // Construye el SVG completo del nesteo a partir del JSON normalizado del backend.
-import { buildViewBox } from './viewBox.js';
-import { entityToSvg, loopToPathD } from './entityToPath.js';
+import { buildViewBox } from "./viewBox.js";
+import {
+  entityToSvg,
+  loopToPathD,
+  loopsToCombinedPathD,
+} from "./entityToPath.js";
 
-const SVG_NS = 'http://www.w3.org/2000/svg';
+const SVG_NS = "http://www.w3.org/2000/svg";
+
+// Area aproximada de una instancia: bbox del loop exterior mayor (local) escalado por |sx*sy|.
+// Si la pieza no trae loops o no hay outer, devuelve 0 (queda al final, no estorba).
+function instanceArea(part, instance) {
+  if (!part || !part.loops) return 0;
+  let maxArea = 0;
+  for (const loop of part.loops) {
+    if (loop.role !== "outer" || !loop.bbox) continue;
+    const w = loop.bbox.maxX - loop.bbox.minX;
+    const h = loop.bbox.maxY - loop.bbox.minY;
+    const area = Math.abs(w * h);
+    if (area > maxArea) maxArea = area;
+  }
+  const sx = instance.sx ?? 1;
+  const sy = instance.sy ?? 1;
+  return maxArea * Math.abs(sx * sy);
+}
 
 // Crea el <g> que representa una instancia (INSERT) aplicando translate/rotate/scale DXF.
 // La transformacion DXF de un INSERT es: traslada, luego rota, luego escala (alrededor del origen del block).
 function buildInstanceGroup(part, instance) {
-  const g = document.createElementNS(SVG_NS, 'g');
+  const g = document.createElementNS(SVG_NS, "g");
   // SVG aplica transforms de izquierda a derecha sobre el sistema local: T -> R -> S
   // coincide con la semantica DXF.
   const tr = `translate(${instance.x} ${instance.y}) rotate(${instance.rot}) scale(${instance.sx} ${instance.sy})`;
-  g.setAttribute('transform', tr);
-  g.setAttribute('data-part', part.partNumber);
-  g.setAttribute('stroke', part.color);
+  g.setAttribute("transform", tr);
+  g.setAttribute("data-part", part.partNumber);
+  g.setAttribute("stroke", part.color);
   // fill-rule evenodd permite que loops anidados (agujeros) queden transparentes.
-  g.setAttribute('fill-rule', 'evenodd');
+  g.setAttribute("fill-rule", "evenodd");
 
   if (part.loops && part.loops.length > 0) {
-    // Render por loops: cerrados con relleno, abiertos solo stroke.
+    // Loops cerrados: TODOS en un mismo <path> para que fill-rule="evenodd" actue
+    // entre subpaths y los huecos (loops anidados) queden transparentes de verdad.
+    const closedD = loopsToCombinedPathD(part.loops);
+    if (closedD) {
+      const path = document.createElementNS(SVG_NS, "path");
+      path.setAttribute("d", closedD);
+      path.setAttribute("fill", part.color);
+      path.setAttribute("fill-opacity", "0.75");
+      g.appendChild(path);
+    }
+    // Loops abiertos (lineas guia, marcas de centro): cada uno como stroke suelto.
     for (const loop of part.loops) {
+      if (loop.closed) continue;
       const d = loopToPathD(loop);
       if (!d) continue;
-      const path = document.createElementNS(SVG_NS, 'path');
-      path.setAttribute('d', d);
-      if (loop.closed) {
-        path.setAttribute('fill', part.color);
-        path.setAttribute('fill-opacity', '0.75');
-      } else {
-        path.setAttribute('fill', 'none');
-      }
+      const path = document.createElementNS(SVG_NS, "path");
+      path.setAttribute("d", d);
+      path.setAttribute("fill", "none");
       g.appendChild(path);
     }
   } else {
     // Fallback: entidades sueltas si no hay loops construidos.
-    g.setAttribute('fill', 'none');
+    g.setAttribute("fill", "none");
     for (const e of part.entities) {
       const el = entityToSvg(e);
       if (el) g.appendChild(el);
@@ -53,7 +80,7 @@ function buildInstanceGroup(part, instance) {
 export function fitViewBoxToContent(svg, paddingRatio = 0.04) {
   // El primer <g> hijo es el "root" con scale(1 -1) ya aplicado: medimos ahi
   // para obtener coordenadas en el sistema final del SVG.
-  const root = svg.querySelector(':scope > g');
+  const root = svg.querySelector(":scope > g");
   if (!root) return;
   let bbox;
   try {
@@ -75,21 +102,29 @@ export function fitViewBoxToContent(svg, paddingRatio = 0.04) {
   const vbH = bbox.height + pad * 2;
   // Logs de depuracion: tamano del viewer y del contenido para diagnosticar encuadre.
   const rect = svg.getBoundingClientRect();
-  console.log('[fitViewBox] viewer pixels:', { width: rect.width, height: rect.height });
-  console.log('[fitViewBox] content bbox (DXF space):', { x: bbox.x, y: bbox.y, w: bbox.width, h: bbox.height });
-  console.log('[fitViewBox] viewBox (SVG space):', { vbX, vbY, vbW, vbH });
-  svg.setAttribute('viewBox', `${vbX} ${vbY} ${vbW} ${vbH}`);
+  console.log("[fitViewBox] viewer pixels:", {
+    width: rect.width,
+    height: rect.height,
+  });
+  console.log("[fitViewBox] content bbox (DXF space):", {
+    x: bbox.x,
+    y: bbox.y,
+    w: bbox.width,
+    h: bbox.height,
+  });
+  console.log("[fitViewBox] viewBox (SVG space):", { vbX, vbY, vbW, vbH });
+  svg.setAttribute("viewBox", `${vbX} ${vbY} ${vbW} ${vbH}`);
   // Recalculamos stroke-width segun el nuevo tamano real para que el contorno siga visible.
   const sw = Math.max(vbW, vbH) * 0.0008;
-  root.setAttribute('stroke-width', sw);
+  root.setAttribute("stroke-width", sw);
 }
 
 // Render principal. Devuelve el <svg> listo para insertarse en el DOM.
 export function renderNesting(nesting) {
-  const svg = document.createElementNS(SVG_NS, 'svg');
-  svg.setAttribute('xmlns', SVG_NS);
-  svg.setAttribute('viewBox', buildViewBox(nesting.bounds));
-  svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+  const svg = document.createElementNS(SVG_NS, "svg");
+  svg.setAttribute("xmlns", SVG_NS);
+  svg.setAttribute("viewBox", buildViewBox(nesting.bounds));
+  svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
 
   // stroke-width como porcentaje del lado mayor para que el grosor sea visible a cualquier escala.
   const [minX, minY] = nesting.bounds.min;
@@ -97,17 +132,29 @@ export function renderNesting(nesting) {
   const sw = Math.max(maxX - minX, maxY - minY) * 0.0008;
 
   // Grupo raiz con flip vertical: convierte el sistema DXF (Y+arriba) al SVG (Y+abajo).
-  const root = document.createElementNS(SVG_NS, 'g');
-  root.setAttribute('transform', 'scale(1 -1)');
-  root.setAttribute('stroke-width', sw);
-  root.setAttribute('vector-effect', 'non-scaling-stroke');
+  const root = document.createElementNS(SVG_NS, "g");
+  root.setAttribute("transform", "scale(1 -1)");
+  root.setAttribute("stroke-width", sw);
+  root.setAttribute("vector-effect", "non-scaling-stroke");
   svg.appendChild(root);
 
   // Indice rapido de piezas para resolver instancias.
   const partsByNumber = new Map(nesting.parts.map((p) => [p.partNumber, p]));
 
+  // Ordenamos las instancias por area aproximada descendente. Las piezas grandes
+  // se pintan primero y las chicas encima: si una pieza chica cae en el hueco
+  // (evenodd) de una grande, se ve a traves porque la grande no la tapa.
+  // Area aproximada = area del bbox del loop exterior mayor * |sx*sy| (la rotacion
+  // no cambia el area, solo el bbox; usar el bbox del loop local basta para ordenar).
+  const sortedInstances = nesting.instances.slice().sort((a, b) => {
+    return (
+      instanceArea(partsByNumber.get(b.partNumber), b) -
+      instanceArea(partsByNumber.get(a.partNumber), a)
+    );
+  });
+
   // Render de instancias de piezas reales.
-  for (const inst of nesting.instances) {
+  for (const inst of sortedInstances) {
     const part = partsByNumber.get(inst.partNumber);
     if (!part) continue;
     root.appendChild(buildInstanceGroup(part, inst));
