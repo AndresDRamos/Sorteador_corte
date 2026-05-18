@@ -40,6 +40,78 @@ function getEndpoints(entity) {
   return null;
 }
 
+// Devuelve los puntos start/end actuales de un loop tal como se recorre.
+function loopEndpoints(loop) {
+  const first = loop.entities[0];
+  const last = loop.entities[loop.entities.length - 1];
+  const firstPts = getEndpoints(first.entity);
+  const lastPts = getEndpoints(last.entity);
+  const start = first.reversed ? firstPts.end : firstPts.start;
+  const end = last.reversed ? lastPts.start : lastPts.end;
+  return { start, end };
+}
+
+// Invierte el orden y el flag reversed de cada entidad del loop.
+function reverseLoopEntities(entities) {
+  return entities
+    .slice()
+    .reverse()
+    .map((e) => ({ entity: e.entity, reversed: !e.reversed }));
+}
+
+function pointDist(a, b) {
+  return Math.hypot(a.x - b.x, a.y - b.y);
+}
+
+// Fusiona pares de loops abiertos cuyos extremos coincidan dentro de tolerancia.
+// Necesario porque la indexación por pointKey usa Math.round con grilla 1e-4, y un punto
+// cuya coordenada cae exactamente en X.XXXX5 puede caer en celdas distintas que un punto
+// geometricamente idéntico computado por trigonometría — fragmentando el contorno.
+// Tolerancia ~1e-2: cubre los errores de redondeo sin unir loops legítimamente separados
+// (los detalles geométricos de las piezas están muy por encima de ese umbral).
+function joinOpenLoops(loops, tol) {
+  const closed = loops.filter((l) => l.closed);
+  let open = loops.filter((l) => !l.closed);
+  if (open.length < 2) return [...closed, ...open];
+
+  let changed = true;
+  while (changed && open.length > 0) {
+    changed = false;
+    outer: for (let i = 0; i < open.length; i++) {
+      const a = open[i];
+      const aEnds = loopEndpoints(a);
+      for (let j = 0; j < open.length; j++) {
+        if (i === j) continue;
+        const b = open[j];
+        const bEnds = loopEndpoints(b);
+        if (pointDist(aEnds.end, bEnds.start) < tol) {
+          a.entities.push(...b.entities);
+        } else if (pointDist(aEnds.end, bEnds.end) < tol) {
+          a.entities.push(...reverseLoopEntities(b.entities));
+        } else if (pointDist(aEnds.start, bEnds.end) < tol) {
+          a.entities.unshift(...b.entities);
+        } else if (pointDist(aEnds.start, bEnds.start) < tol) {
+          a.entities.unshift(...reverseLoopEntities(b.entities));
+        } else {
+          continue;
+        }
+        open.splice(j, 1);
+        changed = true;
+        break outer;
+      }
+    }
+    // Marca como cerrados los loops cuyos extremos ya coinciden tras la fusión.
+    for (const l of open) {
+      const ends = loopEndpoints(l);
+      if (pointDist(ends.start, ends.end) < tol) l.closed = true;
+    }
+    const justClosed = open.filter((l) => l.closed);
+    closed.push(...justClosed);
+    open = open.filter((l) => !l.closed);
+  }
+  return [...closed, ...open];
+}
+
 // Construye loops a partir de un array de entidades.
 // Devuelve Array<{ entities: Array<{ entity, reversed }>, closed: boolean }>.
 export function buildLoops(entities) {
@@ -134,5 +206,5 @@ export function buildLoops(entities) {
     loops.push({ entities: loop, closed });
   }
 
-  return loops;
+  return joinOpenLoops(loops, 1e-2);
 }
