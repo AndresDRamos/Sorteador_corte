@@ -96,6 +96,19 @@ export function loopToPathD(loop) {
   return parts.join(" ");
 }
 
+// Combina varios loops cerrados en un unico atributo "d" con subpaths M..Z M..Z.
+// Critico para que fill-rule="evenodd" detecte huecos: evenodd solo opera dentro
+// de un mismo <path>, no entre <path> hermanos.
+export function loopsToCombinedPathD(loops) {
+  const parts = [];
+  for (const loop of loops) {
+    if (!loop.closed) continue;
+    const d = loopToPathD(loop);
+    if (d) parts.push(d);
+  }
+  return parts.join(" ");
+}
+
 export function entityToSvg(entity) {
   if (entity.type === "LINE") {
     const el = document.createElementNS(SVG_NS, "line");

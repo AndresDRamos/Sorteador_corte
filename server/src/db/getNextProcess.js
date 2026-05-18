@@ -21,11 +21,11 @@ export async function getNextProcess(partNumbers) {
 
   const inClause = clauses.join(", ");
 
-  // Query principal: obtiene la ruta siguiente (NoAsc = 2) para cada material.
+  // Query principal: obtiene el proceso siguiente (NoAsc = 2) para cada material.
   const query = `
     SELECT
       M.ClaveMaterial AS PartNumber,
-      R.Nombre        AS NextRoute
+      R.Nombre        AS NextProcess
     FROM           tblMaterial              AS M
       INNER JOIN  dbo.vwMaterialRutaTiempo AS MRT
                   ON MRT.idMaterial = M.idMaterial
