@@ -1,7 +1,11 @@
 {
   "permissions": {
     "allow": [
-      "Bash(node -e ' *)"
+      "Bash(node -e ' *)",
+      "Bash(node --check server/src/colors/assignColors.js)",
+      "Bash(node --check server/src/parsing/normalizeNesting.js)",
+      "Bash(node --check server/src/routes/nestings.js)",
+      "Bash(node --check web/src/main.js)"
     ]
   }
 }
