@@ -14,14 +14,13 @@
     </header>
 
     <main class="layout">
-      <!-- Panel lateral con la lista de partes detectadas. -->
-      <aside id="parts-panel" class="panel">
-        <h2>Partes</h2>
-        <ul id="parts-list" class="parts-list"></ul>
-      </aside>
-
-      <!-- Contenedor del visor SVG; el render lo inyecta como hijo. -->
+      <!-- Contenedor del visor SVG; el render lo inyecta como hijo. Ocupa ~70% del alto. -->
       <section id="viewer" class="viewer"></section>
+
+      <!-- Panel inferior con tarjetas agrupadas por proceso siguiente. Ocupa ~30% del alto. -->
+      <aside id="parts-panel" class="panel">
+        <div id="parts-list" class="parts-list"></div>
+      </aside>
     </main>
 
     <script type="module" src="/src/main.js"></script>

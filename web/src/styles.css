@@ -1,4 +1,4 @@
-/* Estilos base del visor: layout 2-col, panel lateral fijo, visor flexible. */
+/* Estilos base del visor: visor 70% arriba, panel de agrupaciones 30% abajo. */
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; height: 100%; font-family: system-ui, sans-serif; }
 body { display: flex; flex-direction: column; height: 100vh; }
@@ -9,26 +9,11 @@ body { display: flex; flex-direction: column; height: 100vh; }
 }
 .topbar h1 { font-size: 1.1rem; margin: 0; }
 
-.layout { display: flex; flex: 1; min-height: 0; }
-
-.panel {
-  width: 280px; border-right: 1px solid #ddd; padding: 0.75rem; overflow-y: auto;
-  background: #fcfcfc;
-}
-.panel h2 { font-size: 0.9rem; margin: 0 0 0.5rem; color: #555; text-transform: uppercase; letter-spacing: 0.5px; }
-
-.parts-list { list-style: none; margin: 0; padding: 0; }
-.parts-list li {
-  display: flex; align-items: center; gap: 0.5rem; padding: 0.35rem 0.25rem;
-  border-radius: 4px; cursor: pointer; font-size: 0.85rem;
-}
-.parts-list li:hover { background: #eef3ff; }
-.parts-list .swatch { width: 14px; height: 14px; border-radius: 3px; flex: 0 0 14px; border: 1px solid rgba(0,0,0,0.15); }
-.parts-list .pn { flex: 1; font-family: ui-monospace, monospace; }
-.parts-list .count { color: #888; font-variant-numeric: tabular-nums; }
+/* Layout vertical: visor arriba, panel abajo. 70/30 del alto disponible. */
+.layout { display: flex; flex-direction: column; flex: 1; min-height: 0; }
 
 .viewer {
-  flex: 1; min-width: 0; position: relative; overflow: hidden;
+  flex: 0 0 70%; min-height: 0; position: relative; overflow: hidden;
   /* Grid punteado industrial: referencia visual de escala sobre fondo blanco. */
   background-color: #fafafa;
   background-image:
@@ -39,6 +24,69 @@ body { display: flex; flex-direction: column; height: 100vh; }
   position: absolute; inset: 0;
   width: 100%; height: 100%;
 }
+
+/* Panel inferior: scroll horizontal de tarjetas por agrupacion. */
+.panel {
+  flex: 0 0 30%; min-height: 0;
+  border-top: 1px solid #ddd;
+  background: #fcfcfc;
+  padding: 0.75rem;
+  overflow-x: auto; overflow-y: hidden;
+}
+
+.parts-list {
+  display: flex; flex-direction: row;
+  gap: 0.75rem;
+  height: 100%;
+  align-items: stretch;
+}
+
+.group-card {
+  flex: 0 0 auto;
+  min-width: 220px; max-width: 320px;
+  display: flex; flex-direction: column;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-top: 4px solid var(--group-color, #999);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.group-header {
+  display: flex; align-items: center; gap: 0.5rem;
+  padding: 0.45rem 0.6rem;
+  background: #f7f7f7;
+  border-bottom: 1px solid #eee;
+}
+.group-header .swatch {
+  width: 14px; height: 14px; border-radius: 3px;
+  background: var(--group-color, #999);
+  border: 1px solid rgba(0,0,0,0.15);
+  flex: 0 0 14px;
+}
+.group-header .group-name {
+  flex: 1; font-weight: 600; font-size: 0.85rem;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.group-header .group-count {
+  background: #e4e4e4; padding: 0 0.45rem; border-radius: 10px;
+  font-size: 0.72rem; font-variant-numeric: tabular-nums; color: #555;
+}
+
+.group-parts {
+  list-style: none; margin: 0; padding: 0.25rem 0;
+  overflow-y: auto;
+  flex: 1;
+}
+.group-parts li {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 0.5rem; padding: 0.3rem 0.6rem;
+  font-size: 0.8rem; cursor: pointer;
+}
+.group-parts li:hover { background: #eef3ff; }
+.group-parts li.highlight { background: #dde6ff; }
+.group-parts .pn { font-family: ui-monospace, monospace; }
+.group-parts .count { color: #888; font-variant-numeric: tabular-nums; }
 
 /* Resaltado al hacer hover sobre un item del panel: el resto se atenua. */
 .viewer svg.has-highlight g[data-part]:not(.highlight) { opacity: 0.15; }
