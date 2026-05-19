@@ -1,30 +1,19 @@
-// Asigna un color estable a cada numero de parte usando un hash determinista.
-// Asi un mismo part-number recibe el mismo color entre cargas distintas.
+// Asigna un color a cada clave de grupo por indice ordenado.
+// Garantiza colores unicos mientras haya <= PALETTE.length grupos distintos.
+// Tradeoff: el color de un grupo depende del conjunto que se carga junto;
+// si aparece un grupo nuevo que altera el orden alfabetico, los colores pueden reasignarse.
 
-// Paleta de 20 colores con buen contraste sobre fondo claro (basada en Kelly/Sasha Trubetskoy).
 const PALETTE = [
-  '#e6194b', '#3cb44b', '#4363d8', '#f58231', '#911eb4',
-  '#42d4f4', '#f032e6', '#9a6324', '#800000', '#808000',
-  '#469990', '#000075', '#e6beff', '#aaffc3', '#fabebe',
-  '#ffd8b1', '#fffac8', '#bfef45', '#a9a9a9', '#000000',
+  '#e6194b', '#3cb44b', '#4363d8', '#f58231', '#911eb4'
 ];
 
-// Hash djb2 simple sobre el string (suficiente para distribuir N partes en la paleta).
-function hashString(str) {
-  let h = 5381;
-  for (let i = 0; i < str.length; i++) {
-    h = ((h << 5) + h) + str.charCodeAt(i); // h * 33 + c
-    h = h | 0; // forzar entero 32-bit
-  }
-  return Math.abs(h);
-}
-
-// Devuelve un Map<partNumber, color>.
-export function assignColors(partNumbers) {
+// Devuelve un Map<groupKey, color>. Ordena las claves alfabeticamente para que
+// el mismo conjunto de grupos reciba siempre la misma asignacion entre cargas.
+export function assignColors(groupKeys) {
+  const unique = [...new Set(groupKeys)].sort((a, b) => a.localeCompare(b));
   const map = new Map();
-  for (const pn of partNumbers) {
-    const idx = hashString(pn) % PALETTE.length;
-    map.set(pn, PALETTE[idx]);
+  for (let i = 0; i < unique.length; i++) {
+    map.set(unique[i], PALETTE[i % PALETTE.length]);
   }
   return map;
 }

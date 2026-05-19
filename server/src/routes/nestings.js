@@ -13,7 +13,7 @@ const upload = multer({
   limits: { fileSize: 20 * 1024 * 1024 },
 });
 
-router.post("/nestings", upload.single("file"), (req, res) => {
+router.post("/nestings", upload.single("file"), async (req, res) => {
   if (!req.file) {
     return res
       .status(400)
@@ -22,7 +22,8 @@ router.post("/nestings", upload.single("file"), (req, res) => {
   try {
     const parsed = parseDxfBuffer(req.file.buffer);
     const extracted = extractParts(parsed);
-    const nesting = normalizeNesting(parsed, extracted);
+    // normalizeNesting es async: consulta SQL Server para agrupar piezas por proceso siguiente.
+    const nesting = await normalizeNesting(parsed, extracted);
     res.json(nesting);
   } catch (err) {
     // Errores tipicos: DXF malformado, version no soportada por dxf-parser.
